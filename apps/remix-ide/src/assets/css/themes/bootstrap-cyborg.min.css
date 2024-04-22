@@ -11,6 +11,7 @@
 * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
 */@import url(https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap);
 :root {
+    --ai: #2de7f3;
     --blue:#2a9fd6;
     --indigo:#6610f2;
     --purple:#6f42c1;
@@ -66,6 +67,19 @@ body {
     text-align:left;
     background-color:#060606
 }
+
+*::-webkit-scrollbar {
+  width:  8px;
+  height: 6px;
+  background-color: var(--body-bg);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--secondary);
+  opacity: 0.3;
+  border-radius: 30px;
+}
+
 [tabindex="-1"]:focus:not(:focus-visible) {
     outline:0!important
 }
@@ -5634,7 +5648,7 @@ a.bg-light:focus,a.bg-light:hover,button.bg-light:focus,button.bg-light:hover {
     background-color:#090909!important
 }
 .bg-dark {
-    background-color:#adafae!important
+    background-color:#2f3130!important
 }
 a.bg-dark:focus,a.bg-dark:hover,button.bg-dark:focus,button.bg-dark:hover {
     background-color:#939695!important
@@ -8374,6 +8388,9 @@ a.text-danger:focus,a.text-danger:hover {
 }
 a.text-light:focus,a.text-light:hover {
     color:#000!important
+}
+.text-dark {
+  color: #babbcc !important;
 }
 .text-dark {
     color:#adafae!important

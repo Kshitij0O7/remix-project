@@ -37,17 +37,12 @@ import {HardhatProvider} from './app/providers/hardhat-provider'
 import {GanacheProvider} from './app/providers/ganache-provider'
 import {FoundryProvider} from './app/providers/foundry-provider'
 import {ExternalHttpProvider} from './app/providers/external-http-provider'
-import {InjectedProviderDefault} from './app/providers/injected-provider-default'
-import {InjectedProviderTrustWallet} from './app/providers/injected-provider-trustwallet'
-import {Injected0ptimismProvider} from './app/providers/injected-optimism-provider'
-import {InjectedArbitrumOneProvider} from './app/providers/injected-arbitrum-one-provider'
-import {InjectedEphemeryTestnetProvider} from './app/providers/injected-ephemery-testnet-provider'
-import {InjectedSKALEChaosTestnetProvider} from './app/providers/injected-skale-chaos-testnet-provider'
 import { FileDecorator } from './app/plugins/file-decorator'
 import { CodeFormat } from './app/plugins/code-format'
 import { SolidityUmlGen } from './app/plugins/solidity-umlgen'
 import { CompilationDetailsPlugin } from './app/plugins/compile-details'
 import { VyperCompilationDetailsPlugin } from './app/plugins/vyper-compilation-details'
+import { RemixGuidePlugin } from './app/plugins/remixGuide'
 import { ContractFlattener } from './app/plugins/contractFlattener'
 import { TemplatesPlugin } from './app/plugins/remix-templates'
 import { fsPlugin } from './app/plugins/electron/fsPlugin'
@@ -59,6 +54,7 @@ import { ripgrepPlugin } from './app/plugins/electron/ripgrepPlugin'
 import { compilerLoaderPlugin, compilerLoaderPluginDesktop } from './app/plugins/electron/compilerLoaderPlugin'
 
 import {OpenAIGpt} from './app/plugins/openaigpt'
+import {SolCoder} from './app/plugins/solcoderAI'
 
 const isElectron = require('is-electron')
 
@@ -67,7 +63,6 @@ const remixLib = require('@remix-project/remix-lib')
 import { QueryParams } from '@remix-project/remix-lib'
 import { SearchPlugin } from './app/tabs/search'
 import { ElectronProvider } from './app/files/electronProvider'
-import { CopilotSuggestion } from './app/plugins/copilot/suggestion-service/copilot-suggestion'
 
 const Storage = remixLib.Storage
 const RemixDProvider = require('./app/files/remixDProvider')
@@ -228,12 +223,16 @@ class AppComponent {
     // ----------------- Compilation Details ----------------------------
     const compilationDetails = new CompilationDetailsPlugin(appManager)
     const vyperCompilationDetails = new VyperCompilationDetailsPlugin(appManager)
+
+    // ----------------- Remix Guide ----------------------------
+    const remixGuide = new RemixGuidePlugin(appManager)
+
     // ----------------- ContractFlattener ----------------------------
     const contractFlattener = new ContractFlattener()
 
     // ----------------- AI --------------------------------------
     const openaigpt = new OpenAIGpt()
-    const copilotSuggestion = new CopilotSuggestion()
+    const solcoder = new SolCoder()
 
     // ----------------- import content service ------------------------
     const contentImport = new CompilerImports()
@@ -268,12 +267,6 @@ class AppComponent {
     const ganacheProvider = new GanacheProvider(blockchain)
     const foundryProvider = new FoundryProvider(blockchain)
     const externalHttpProvider = new ExternalHttpProvider(blockchain)
-    const trustWalletInjectedProvider = new InjectedProviderTrustWallet()
-    const defaultInjectedProvider = new InjectedProviderDefault()
-    const injected0ptimismProvider = new Injected0ptimismProvider()
-    const injectedArbitrumOneProvider = new InjectedArbitrumOneProvider()
-    const injectedEphemeryTestnetProvider = new InjectedEphemeryTestnetProvider()
-    const injectedSKALEChaosTestnetProvider = new InjectedSKALEChaosTestnetProvider()
     // ----------------- convert offset to line/column service -----------
     const offsetToLineColumnConverter = new OffsetToLineColumnConverter()
     Registry.getInstance().put({
@@ -346,23 +339,18 @@ class AppComponent {
       hardhatProvider,
       ganacheProvider,
       foundryProvider,
-      externalHttpProvider,
-      defaultInjectedProvider,
-      trustWalletInjectedProvider,
-      injected0ptimismProvider,
-      injectedArbitrumOneProvider,
-      injectedEphemeryTestnetProvider,
-      injectedSKALEChaosTestnetProvider,
+      externalHttpProvider,      
       this.walkthroughService,
       search,
       solidityumlgen,
       compilationDetails,
       vyperCompilationDetails,
+      remixGuide,
       contractFlattener,
       solidityScript,
       templates,
       openaigpt,
-      copilotSuggestion
+      solcoder,
     ])
 
     //---- fs plugin
@@ -415,7 +403,8 @@ class AppComponent {
       filePanel,
       Registry.getInstance().get('compilersartefacts').api,
       networkModule,
-      Registry.getInstance().get('fileproviders/browser').api
+      Registry.getInstance().get('fileproviders/browser').api,
+      this.engine
     )
     const analysis = new AnalysisTab()
     const debug = new DebuggerTab()
@@ -517,9 +506,12 @@ class AppComponent {
       }
     )
     await this.appManager.activatePlugin(['solidity-script', 'openaigpt'])
+    await this.appManager.activatePlugin(['solcoder'])
 
+    
 
-    await this.appManager.activatePlugin(['filePanel'])
+    await this.appManager.activatePlugin(['filePanel'])    
+
     // Set workspace after initial activation
     this.appManager.on('editor', 'editorMounted', () => {
       if (Array.isArray(this.workspace)) {
